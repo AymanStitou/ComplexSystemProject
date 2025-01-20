@@ -41,14 +41,16 @@ def load_gen_into_networkx(filename):
                 
     return G
 
-G = load_gen_into_networkx('iceland.m')
-print("Nodes:", len(G.nodes()))
-print("Edges:", len(G.edges()))
 
-graph = load_gen_into_networkSx('iceland.m')
+if __name__ == "__main__":
+    G = load_gen_into_networkx('iceland.m')
+    print("Nodes:", len(G.nodes()))
+    print("Edges:", len(G.edges()))
 
-pos = nx.spring_layout(graph)  
-nx.draw(graph, pos, with_labels=True, node_color='lightblue', edge_color='gray')
+    graph = load_gen_into_networkx('iceland.m')
 
-plt.title("Network from mpc.gen data")
-plt.show()
+    pos = nx.spring_layout(graph)  
+    nx.draw(graph, pos, with_labels=True, node_color='lightblue', edge_color='gray')
+
+    plt.title("Network from mpc.gen data")
+    plt.show()
