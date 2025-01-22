@@ -53,6 +53,7 @@ class CascadingFailureSimulation:
                 for neighbor in neighbors:
                     if neighbor not in failed_nodes:
                         self.G.nodes[neighbor]['load'] += self.G.nodes[node]['load'] * self.G.nodes[neighbor]['load']/sum_neighbours
+                        print(self.G.nodes[neighbor]['load'],self.G.nodes[neighbor]['capacity'])
                         if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
                             failed_nodes.add(neighbor)
                             queue.append(neighbor)
