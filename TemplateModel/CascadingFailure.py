@@ -50,6 +50,7 @@ class CascadingFailureSimulation:
         while queue:
             node = queue.pop(0)
             # neighbors = list(self.G.neighbors(node))
+            print(self.G.is_directed())
             if self.G.is_directed():
                 neighbors = list(self.G.successors(node))
             else:
@@ -82,8 +83,8 @@ class CascadingFailureSimulation:
         # N = len(self.G.nodes)
 
         self.CF = NA / (len(failed_nodes) * self.N)
-
-        return failed_nodes, self.CF
+        I = len(failed_nodes)/self.N
+        return failed_nodes, self.CF, I
 
     def visualize_network(self, failed_nodes):
         pos = nx.spring_layout(self.G)
