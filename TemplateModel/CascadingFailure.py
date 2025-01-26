@@ -161,3 +161,24 @@ class CascadingFailureSimulation:
             anim.save('network_animation.gif', writer=writer)
         plt.show()
 
+    def rank_centrality(self, centrality_type='degree', length=None): 
+        """
+            Ranks the nodes in the network based on the centrality.
+
+            Parameters:
+            centrality_type (str): The type of centrality to rank.
+            length (int): The number of top-ranked nodes to display.
+        """
+
+        if centrality_type == 'degree': 
+            degree_centralities = {node: self.G.nodes[node]['degree_centrality'] for node in self.G.nodes}
+            rank_centrality_results = sorted(degree_centralities.items(), key=lambda x: x[1], reverse=True)
+        elif centrality_type == 'betweenness': 
+            betweenness_centralities = {node: self.G.nodes[node]['betweenness_centrality'] for node in self.G.nodes}
+            rank_centrality_results = sorted(betweenness_centralities.items(), key=lambda x: x[1], reverse=True)
+        elif centrality_type == 'closeness': 
+            closeness_centralities = {node: self.G.nodes[node]['closeness_centrality'] for node in self.G.nodes}
+            rank_centrality_results = sorted(closeness_centralities.items(), key=lambda x: x[1], reverse=True)
+        
+        for i, (node, centrality) in enumerate(rank_centrality_results[:length], 1):
+            print(f"{i}: The node {node} has the centrality of {centrality}")
