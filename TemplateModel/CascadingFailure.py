@@ -179,9 +179,12 @@ class CascadingFailureSimulation:
         elif centrality_type == 'closeness': 
             closeness_centralities = {node: self.G.nodes[node]['closeness_centrality'] for node in self.G.nodes}
             rank_centrality_results = sorted(closeness_centralities.items(), key=lambda x: x[1], reverse=True)
+        else:
+            raise ValueError(f"Unknown centrality type: {centrality_type}")
         
         for i, (node, centrality) in enumerate(rank_centrality_results[:length], 1):
             print(f"{i}: The node {node} has the centrality of {centrality}")
         ranked_nodes = [node for node, centrality in rank_centrality_results]
         
         return ranked_nodes[:length]
+
