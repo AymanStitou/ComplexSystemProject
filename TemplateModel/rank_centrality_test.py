@@ -7,4 +7,5 @@ G = nx.relabel_nodes(G, mapping)
 
 simulation = CascadingFailureSimulation(G)
 simulation.calculate_centrality_measures()
-simulation.rank_centrality('degree', 5)
+highest_centrality_nodes = simulation.rank_centrality('degree', 5)
+print(highest_centrality_nodes)

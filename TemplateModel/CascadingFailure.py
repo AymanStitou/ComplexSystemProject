@@ -182,3 +182,6 @@ class CascadingFailureSimulation:
         
         for i, (node, centrality) in enumerate(rank_centrality_results[:length], 1):
             print(f"{i}: The node {node} has the centrality of {centrality}")
+        ranked_nodes = [node for node, centrality in rank_centrality_results]
+        
+        return ranked_nodes[:length]
