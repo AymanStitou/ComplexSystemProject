@@ -1,5 +1,9 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import matplotlib.colors as mcolors
+from matplotlib.patches import Patch
+from matplotlib.animation import PillowWriter
 
 class CascadingFailureSimulation:
     def __init__(self, G=None):
@@ -61,6 +65,7 @@ class CascadingFailureSimulation:
         """
         failed_nodes = set(initial_failures)
         queue = list(initial_failures)
+        failed_nodes_list = list()
         
         while queue:
             node = queue.pop(0)
@@ -81,6 +86,7 @@ class CascadingFailureSimulation:
                             self.G.nodes[neighbor]['load'] += self.G.nodes[node]['load'] / len(neighbors)
                             failed_nodes.add(neighbor)
                             queue.append(neighbor)
+                            failed_nodes_list.append(neighbor)
                         else:
                             # Redistribute load proportionally by capacity
                             redistributed_load = (self.G.nodes[node]['load'] *
@@ -90,12 +96,13 @@ class CascadingFailureSimulation:
                             if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
                                 failed_nodes.add(neighbor)
                                 queue.append(neighbor)
+                                failed_nodes_list.append(neighbor)
 
         NA = len(initial_failures)
         self.CF = NA / (len(failed_nodes) * self.N)
         I = len(failed_nodes) / self.N 
 
-        return failed_nodes, self.CF, I
+        return failed_nodes, self.CF, I, failed_nodes_list
 
     def visualize_network(self, failed_nodes):
         """
@@ -115,3 +122,42 @@ class CascadingFailureSimulation:
             print(f"Node {node}: Degree={self.G.nodes[node]['degree_centrality']:.2f}, "
                   f"Betweenness={self.G.nodes[node]['betweenness_centrality']:.2f}, "
                   f"Closeness={self.G.nodes[node]['closeness_centrality']:.2f}")
+
+    def animation_network(self, initial_failures, failed_nodes_list, save_anim=False): 
+        pos = nx.spring_layout(self.G)
+        cmap = mcolors.LinearSegmentedColormap.from_list("", ["green", "red"])
+        fig, ax = plt.subplots(figsize=(10, 8))
+
+        color_meanings = {
+            'red': 'Attacked Nodes',
+            'brown': 'Failed Nodes',
+            'green': 'Surviving Nodes'
+        }
+
+        def update(frame):
+            ax.clear()
+            colors = []
+            for i in range(self.N):
+                if i in initial_failures:
+                    colors.append('red')
+                elif i in failed_nodes_list[:frame]:
+                    colors.append('brown')
+                else:
+                    colors.append('green')
+            nx.draw(self.G, pos, ax=ax, with_labels=True, node_color=colors, node_size=800, font_size=10, font_weight='bold')
+            
+            ax.set_title("Cascading Failures in Nodes")
+            legend_elements = [Patch(facecolor=color, edgecolor='black', label=meaning) 
+                            for color, meaning in color_meanings.items()]
+            
+            ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.8, 1))
+            ax.set_xlim(ax.get_xlim())
+            ax.set_ylim(ax.get_ylim())
+
+        anim = animation.FuncAnimation(fig, update, frames=len(failed_nodes_list)+1, interval=500, repeat=False)
+
+        if save_anim: 
+            writer = PillowWriter(fps=2)
+            anim.save('network_animation.gif', writer=writer)
+        plt.show()
+
