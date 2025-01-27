@@ -2,13 +2,16 @@ from CascadingFailure import CascadingFailureSimulation
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
-G = nx.read_graphml("replicated network/toy_network_undirected.graphml")
+import random
+# G = nx.read_graphml("replicated network/toy_network_undirected.graphml")
+# mapping = {node: int(node) for node in G.nodes()}
+# G = nx.relabel_nodes(G, mapping)
+G = nx.read_graphml("usnetwork/us_network.graphml")
 mapping = {node: int(node) for node in G.nodes()}
 G = nx.relabel_nodes(G, mapping)
-
-
+total_nodes = len(G.nodes())
 simulation = CascadingFailureSimulation(G)
-
+# initial_failures =[random.randint(0, total_nodes-1) for _ in range(10)]
 
 # simulation.calculate_centrality_measures()
 # simulation.print_centrality_measures()
@@ -42,12 +45,13 @@ n_fail_nodes = []
 CF_list = []
 I_list = []
 for a in alpha3:
-    simulation.calculate_centrality_measures()
+    # simulation.calculate_centrality_measures()
+    print("->", a)
     simulation.calculate_initial_load(centrality_type='betweenness')
     simulation.calculate_capacity(alpha=a, beta=1)
 
-    initial_failures = [11] 
-    failed_nodes, CF, I = simulation.simulate_cascading_failure(initial_failures)
+    initial_failures = [11, 87, 300, 17, 99, 2987, 999, 2222, 55, 43, 22, 99] 
+    failed_nodes, CF, I , failed_nodes_list= simulation.simulate_cascading_failure(initial_failures, use_prevention=True)
     n_fail_nodes.append(len(failed_nodes))
     I_list.append(I)
     CF_list.append(CF)
@@ -73,11 +77,11 @@ plt.grid()
 plt.show()
 
 
-simulation.visualize_network(failed_nodes)
+# simulation.visualize_network(failed_nodes)
 
 
 print("Failed nodes:", failed_nodes)
-
-simulation.print_centrality_measures()
+print(CF_list)
+# simulation.print_centrality_measures()
 
 

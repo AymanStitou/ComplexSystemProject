@@ -55,48 +55,122 @@ class CascadingFailureSimulation:
             load = self.G.nodes[node]['load']
             self.G.nodes[node]['capacity'] = (1 + alpha) * (load ** beta)
 
-    def simulate_cascading_failure(self, initial_failures):
-        """
-        Initiates cascading failures with given initial failures.
-        Returns:
-            failed_nodes: set of all failed nodes
-            self.CF: measure as defined in your code
-            I: fraction of nodes that failed
-        """
-        failed_nodes = set(initial_failures)
-        queue = list(initial_failures)
-        failed_nodes_list = list()
-        
-        while queue:
-            node = queue.pop(0)
-            # If directed graph, use successors; otherwise use neighbors
+    def prevent_cascading_failure(self, failed_nodes):
+        affected_neighbors = set()
+        for f_node in failed_nodes:
+            if self.G.is_directed():
+                affected_neighbors.update(self.G.successors(f_node))
+            else:
+                affected_neighbors.update(self.G.neighbors(f_node))
+
+        affected_neighbors -= failed_nodes
+
+        for node in affected_neighbors:
             if self.G.is_directed():
                 neighbors = list(self.G.successors(node))
             else:
                 neighbors = list(self.G.neighbors(node))
 
-            # Sum the capacities of the neighbors
+            valid_neighbors = [
+                n for n in neighbors
+                if n not in failed_nodes and not any(f in self.G.neighbors(n) for f in failed_nodes)
+            ]
+
+            total_load = self.G.nodes[node]['load']
+
+            for neighbor in valid_neighbors:
+                available_capacity = self.G.nodes[neighbor]['capacity'] - self.G.nodes[neighbor]['load']
+
+                if available_capacity > 0:
+                    redistributed_load = min(available_capacity, total_load / len(valid_neighbors))
+                    self.G.nodes[neighbor]['load'] += redistributed_load
+                    total_load -= redistributed_load
+
+                if total_load <= 0:
+                    break
+
+            self.G.nodes[node]['load'] = total_load
+
+
+    # def prevent_cascading_failure(self, failed_nodes):
+    #     """
+    #         This one has a score system. I don't see an improvement, but I only tested a few times.
+    #     """
+    #     affected_neighbors = set()
+    #     for f_node in failed_nodes:
+    #         if self.G.is_directed():
+    #             affected_neighbors.update(self.G.successors(f_node))
+    #         else:
+    #             affected_neighbors.update(self.G.neighbors(f_node))
+
+    #     affected_neighbors -= failed_nodes
+
+    #     for node in affected_neighbors:
+    #         if self.G.is_directed():
+    #             neighbors = list(self.G.successors(node))
+    #         else:
+    #             neighbors = list(self.G.neighbors(node))
+
+    #         valid_neighbors = [
+    #             n for n in neighbors
+    #             if n not in failed_nodes and not any(f in self.G.neighbors(n) for f in failed_nodes)
+    #         ]
+
+    #         scored_neighbors = sorted(
+    #             valid_neighbors,
+    #             key=lambda n: (self.G.nodes[n]['capacity'] - self.G.nodes[n]['load']) / (len(list(self.G.neighbors(n))) or 1),
+    #             reverse=True
+    #         )
+
+    #         total_load = self.G.nodes[node]['load']
+
+    #         for neighbor in scored_neighbors:
+    #             available_capacity = self.G.nodes[neighbor]['capacity'] - self.G.nodes[neighbor]['load']
+
+    #             if available_capacity > 0:
+    #                 redistributed_load = min(available_capacity, total_load / len(scored_neighbors))
+    #                 self.G.nodes[neighbor]['load'] += redistributed_load
+    #                 total_load -= redistributed_load
+
+    #             if total_load <= 0:
+    #                 break
+
+    #         self.G.nodes[node]['load'] = total_load
+
+
+    def simulate_cascading_failure(self, initial_failures, use_prevention=False):
+        failed_nodes = set(initial_failures)
+        queue = list(initial_failures)
+        failed_nodes_list = list()
+
+        while queue:
+            node = queue.pop(0)
+            if self.G.is_directed():
+                neighbors = list(self.G.successors(node))
+            else:
+                neighbors = list(self.G.neighbors(node))
+
             sum_neighbours = sum([self.G.nodes[neighbor]['capacity'] for neighbor in neighbors])
 
             if neighbors:
                 for neighbor in neighbors:
                     if neighbor not in failed_nodes:
                         if sum_neighbours == 0:
-                            # If neighbors have zero capacity (edge case)
                             self.G.nodes[neighbor]['load'] += self.G.nodes[node]['load'] / len(neighbors)
                             failed_nodes.add(neighbor)
                             queue.append(neighbor)
                             failed_nodes_list.append(neighbor)
                         else:
-                            # Redistribute load proportionally by capacity
                             redistributed_load = (self.G.nodes[node]['load'] *
-                                                  (self.G.nodes[neighbor]['capacity'] / sum_neighbours))
+                                                (self.G.nodes[neighbor]['capacity'] / sum_neighbours))
                             self.G.nodes[neighbor]['load'] += redistributed_load
-                            # Check failure condition
                             if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
                                 failed_nodes.add(neighbor)
                                 queue.append(neighbor)
                                 failed_nodes_list.append(neighbor)
+
+            if use_prevention:
+                self.prevent_cascading_failure(failed_nodes)
 
         NA = len(initial_failures)
         self.CF = NA / (len(failed_nodes) * self.N)
