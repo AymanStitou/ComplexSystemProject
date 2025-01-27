@@ -98,7 +98,7 @@ G3 = nx.relabel_nodes(G3, mapping3)
 
 # initialize parameters and empty lists
 alpha = np.linspace(0,1.2,20)
-beta_value = 1.2
+beta_value = 1.05
 centrality_types = ["degree", "betweenness", "closeness"]
 
 # start simulation of the toy network
