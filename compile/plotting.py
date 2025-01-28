@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import logging
+import utilities as utils
 def plot_degree_dists(G_degrees, ER_degrees):
     logging.info('Plotting the degree distribution histograms')
     plt.figure(figsize=(10, 6))
@@ -19,3 +20,23 @@ def plot_degree_dists(G_degrees, ER_degrees):
 
     # Showing the plot
     plt.show()
+
+def plot_fraction_failed_nodes(alpha, results, network_name = '', save_results = False, save_plot = False):
+    plt.figure(figsize=(10, 6))
+    for centrality, mean_result in results.items():
+        plt.plot(alpha, mean_result, label=f"{centrality.capitalize()} Centrality", marker='o')
+    plt.title(f"Mean Fraction of Failed Nodes vs. Alpha {network_name} Network")
+    plt.xlabel("Alpha")
+    plt.ylabel("Mean Fraction of Failed Nodes (I)")
+    plt.legend()
+    plt.grid()
+    plt.show()
+    
+    if save_plot:
+        plot_filename = f'results/plots/{network_name}_fraction_failed_nodes.png'
+        plt.savefig(plot_filename)  
+        logging.info(f"Plot saved")
+
+    
+    if save_results:
+        utils.save_results_to_csv(results, alpha, f'results/{network_name}results.csv' )
