@@ -5,7 +5,7 @@ from scipy.stats import ks_2samp
 def get_networkgraph(filepath):
     try:
         #Trying to import and read the save Graph File
-        G = nx.read_graphml(filepath)
+        graph = nx.read_graphml(filepath)
         logging.info('Graph Successfully imported')
     except FileNotFoundError:
         logging.error("Error: GraphML file not found.")
@@ -14,16 +14,16 @@ def get_networkgraph(filepath):
         print(f"Error loading graph: {e}")
         exit(1)
 
-    mapping = {node: int(node) for node in G.nodes()}
-    G = nx.relabel_nodes(G, mapping)
+    mapping = {node: int(node) for node in graph.nodes()}
+    graph = nx.relabel_nodes(graph, mapping)
     logging.info("Graph nodes have been successfully relabeled.")
-    logging.info(f"The graph has {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
+    logging.info(f"The graph has {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges.")
 
-    return G
+    return graph
 
-def create_ER_network(G):
-    n = G.number_of_nodes()  
-    k = G.number_of_edges()
+def create_ER_network(graph):
+    n = graph.number_of_nodes()  
+    k = graph.number_of_edges()
 
     p = 2*k/(n*(n-1)) # Probability for the ER graph to have k edges 
     ER_graph = nx.erdos_renyi_graph(n, p)
@@ -57,6 +57,37 @@ def compare_degree_distributions(G, ER_graph, plot_dist = True, stat_test = True
 
     if prob_dist:
         return G_degree_prob, ER_degree_prob
+    
+def calculate_clustering_coefficient(graph):
+    '''Calculte Clustering Coefficient of the graph'''
+    return nx.average_clustering(graph)
 
+def calculate_average_path_length(graph):
+    '''Calculate average path length of the graph'''
+    try:
+        return nx.average_shortest_path_length(graph)
+    except nx.NetworkXError:
+        logging.error("Graph is disconnected, cannot compute average path length.")
+        return None
+
+def calculate_degree_assortativity(graph):
+    '''Calculate the degree assortativity of the graph'''
+    return nx.degree_assortativity_coefficient(graph)
+
+def compare_graph_metrics(graph1, graph2):
+    logging.info('Comparing Metric between two graphs')
+    graph1_clustering = calculate_clustering_coefficient(graph1)
+    graph2_clustering = calculate_clustering_coefficient(graph2)
+    print(f"Clustering Coefficient - Network1: {graph1_clustering:0.5f}, Network2: {graph2_clustering:0.5f}")
+    
+    # Average Path Length
+    graph1_avg_path_length = calculate_average_path_length(graph1)
+    graph2_avg_path_length = calculate_average_path_length(graph2)
+    print(f"Average Path Length - Network1: {graph1_avg_path_length:0.5f}, Network2: {graph2_avg_path_length:0.5f}")
+    
+    # Degree Assortativity
+    graph1_assortativity = calculate_degree_assortativity(graph1)
+    graph2_assortativity = calculate_degree_assortativity(graph2)
+    print(f"Degree Assortativity - Network1: {graph1_assortativity:0.5f}, Network2: {graph2_assortativity:0.5f}")
 
 
