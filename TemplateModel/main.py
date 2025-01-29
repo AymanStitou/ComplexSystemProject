@@ -21,7 +21,7 @@ prevention_mechanisms = ["None", "localized_capacity_boost", "dynamic_load_redis
 num_simulations = 20  # Number of runs to average over
 
 # Storage for results (accumulate values across simulations)
-results = {mechanism: {"CF": np.zeros(len(alpha_values)), "I": np.zeros(len(alpha_values))} for mechanism in prevention_mechanisms}
+results = {mechanism: {"CF": np.zeros(len(alpha_values)), "I": np.zeros(len(alpha_values)), "total_capacity": np.zeros(len(alpha_values))} for mechanism in prevention_mechanisms}
 
 # Run multiple simulations
 for sim in range(num_simulations):
@@ -29,7 +29,6 @@ for sim in range(num_simulations):
 
     # Generate new random failures for each run
     initial_failures = [random.randint(1, total_nodes) for _ in range(int(total_nodes/100))]
-
     for mechanism in prevention_mechanisms:
         print(f"Simulating with prevention mechanism: {mechanism}")
 
@@ -44,11 +43,13 @@ for sim in range(num_simulations):
             # Accumulate results
             results[mechanism]["CF"][idx] += CF
             results[mechanism]["I"][idx] += I
+            results[mechanism]["total_capacity"][idx] += simulation.return_total_capacity()
 
 # Compute averages over 50 simulations
 for mechanism in prevention_mechanisms:
     results[mechanism]["CF"] /= num_simulations
     results[mechanism]["I"] /= num_simulations
+    results[mechanism]["total_capacity"] /= num_simulations
 
 # Define marker styles for different prevention mechanisms
 markers = ["o", "s", "D", "^", "x"]
@@ -57,12 +58,12 @@ line_styles = ["-", "--", "-.", ":", "-"]
 # Plot CF vs alpha (Averaged)
 plt.figure(figsize=(10, 6))
 for i, mechanism in enumerate(prevention_mechanisms):
-    plt.plot(alpha_values, results[mechanism]["CF"], 
+    plt.plot(results[mechanism]["total_capacity"], results[mechanism]["CF"], 
              marker=markers[i], linestyle=line_styles[i], 
              label=mechanism, markersize=6)
-plt.xlabel("Value of alpha")
+plt.xlabel("Average total capacity")
 plt.ylabel("Average CF")
-plt.title(f"Cascading Failure Robustness (CF) vs Alpha (Averaged over {num_simulations} Simulations)")
+plt.title(f"Cascading Failure Robustness (CF) vs Avg tot. capacity (Averaged over {num_simulations} Simulations)")
 plt.legend()
 plt.grid()
 plt.show()
@@ -70,12 +71,12 @@ plt.show()
 # Plot I vs alpha (Averaged)
 plt.figure(figsize=(10, 6))
 for i, mechanism in enumerate(prevention_mechanisms):
-    plt.plot(alpha_values, results[mechanism]["I"], 
+    plt.plot(results[mechanism]["total_capacity"], results[mechanism]["I"], 
              marker=markers[i], linestyle=line_styles[i], 
              label=mechanism, markersize=6)
-plt.xlabel("Value of alpha")
+plt.xlabel("Average total capacity")
 plt.ylabel("Average I")
-plt.title(f"Fraction of Failed Nodes (I) vs Alpha (Averaged over {num_simulations} Simulations)")
+plt.title(f"Fraction of Failed Nodes (I) vs Avg tot. capacity (Averaged over {num_simulations} Simulations)")
 plt.legend()
 plt.grid()
 plt.show()

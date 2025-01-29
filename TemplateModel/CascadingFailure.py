@@ -30,7 +30,7 @@ class CascadingFailureSimulation:
         for node in self.G.nodes:
             self.G.nodes[node]['degree_centrality'] = degree_centrality[node] * (self.N - 1)
             self.G.nodes[node]['betweenness_centrality'] = betweenness_centrality[node]
-            self.G.nodes[node]['closeness_centrality'] = closeness_centrality[node]
+            self.G.nodes[node]['closeness_centrality'] = closeness_centrality[node] * (self.N - 1)
 
     def calculate_initial_load(self, centrality_type='degree'):
         """
@@ -147,6 +147,14 @@ class CascadingFailureSimulation:
             self.localized_capacity_boost(failed_nodes)
 
         while queue:
+            # Apply prevention mechanisms dynamically
+            if use_prevention == "dynamic_load_redistribution":
+                self.dynamic_load_redistribution(failed_nodes)
+            elif use_prevention == "controlled_failure_isolation":
+                self.controlled_failure_isolation(failed_nodes)
+            elif use_prevention == "prevent_cascading_failure":
+                self.prevent_cascading_failure(failed_nodes)
+
             node = queue.pop(0)
             neighbors = list(self.G.successors(node)) if self.G.is_directed() else list(self.G.neighbors(node))
             sum_neighbours = sum([self.G.nodes[neighbor]['capacity'] for neighbor in neighbors])
@@ -167,13 +175,13 @@ class CascadingFailureSimulation:
                             queue.append(neighbor)
                             failed_nodes_list.append(neighbor)
 
-            # Apply prevention mechanisms dynamically
-            if use_prevention == "dynamic_load_redistribution":
-                self.dynamic_load_redistribution(failed_nodes)
-            elif use_prevention == "controlled_failure_isolation":
-                self.controlled_failure_isolation(failed_nodes)
-            elif use_prevention == "prevent_cascading_failure":
-                self.prevent_cascading_failure(failed_nodes)
+            # # Apply prevention mechanisms dynamically
+            # if use_prevention == "dynamic_load_redistribution":
+            #     self.dynamic_load_redistribution(failed_nodes)
+            # elif use_prevention == "controlled_failure_isolation":
+            #     self.controlled_failure_isolation(failed_nodes)
+            # elif use_prevention == "prevent_cascading_failure":
+            #     self.prevent_cascading_failure(failed_nodes)
 
         NA = len(initial_failures)
         self.CF = NA / (len(failed_nodes) * self.N)
@@ -264,5 +272,13 @@ class CascadingFailureSimulation:
         ranked_nodes = [node for node, centrality in rank_centrality_results]
         
         return ranked_nodes[:length]
+    
 
+    def return_total_capacity(self):
+        total = 0
+        for node in self.G.nodes:
+            
+            total += self.G.nodes[node]['capacity'] 
+        
+        return total
 
