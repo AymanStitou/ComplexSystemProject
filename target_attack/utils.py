@@ -27,6 +27,42 @@ def run_simulation(initial_failures, centrality_type, simulation, alpha=0.2, bet
 
     return I_list
 
+def simulation_capacity(initial_failures, centrality, simulation, capacity_list): 
+    sum_centrality = simulation.calculate_centrality_measures()
+    I_list = []
+    for c in capacity_list: 
+        simulation.calculate_initial_load(centrality_type=centrality, sum_centrality=sum_centrality)
+        simulation.calculate_capacity(total_capacity=c)
+        _, _, I, _ = simulation.simulate_cascading_failure(initial_failures)
+        I_list.append(I)
+    return I_list
+
+def simulate_and_average_capacity(G, centrality_types, capacity_list, num_simulations=25, target_attack=False):
+    results = {centrality: [] for centrality in centrality_types}
+    total_nodes = len(G.nodes)
+    num_failures = max(1, int(total_nodes * 0.01))
+    simulation = CascadingFailureSimulation(G)
+    if target_attack: 
+        for centrality in centrality_types:
+            initial_failures = simulation.rank_centrality(centrality, num_failures)
+            I = simulation_capacity(initial_failures, centrality, simulation, capacity_list)
+            results[centrality] = I
+            print(fr"Finish simulation of the centrality type: {centrality}")
+            
+        return results
+    else: 
+        for _ in range(num_simulations):
+            initial_failures = random.sample(range(1,total_nodes-1), num_failures)
+            for centrality in centrality_types:
+                I = simulation_capacity(initial_failures, centrality, simulation, capacity_list)
+                results[centrality].append(I)
+                print(fr"Finish simulation of the centrality type: {centrality}")
+
+        # Compute mean I_list for each centrality type across simulations
+        mean_results = {centrality: np.mean(results[centrality], axis=0) for centrality in centrality_types}
+        
+        return mean_results
+
 def simulate_and_average(G, centrality_types, num_simulations=25, target_attack=False, alpha=0.2, beta=1, alpha_list=None, beta_list=None, use_prevention=False):
     """
     Simulate the cascading failure multiple times and calculate the mean fraction of failed nodes for each centrality type.
@@ -111,7 +147,7 @@ def load_results_from_csv(filename):
     return alpha, results
 
 
-def save_results_to_csv(results, filename, alpha_list=None, beta_list=None):
+def save_results_to_csv(results, filename, alpha_list=None, beta_list=None, capacity_list=None):
     """
     Save simulation results to a CSV file.
 
@@ -121,6 +157,8 @@ def save_results_to_csv(results, filename, alpha_list=None, beta_list=None):
         df.insert(0, "Alpha", alpha_list)
     elif beta_list is not None: 
         df.insert(0, "Beta", beta_list)
+    elif capacity_list is not None: 
+        df.insert(0, "Total_Capacity", capacity_list)
     else: 
         raise ValueError("No input of varying variables (alpha/beta)")
     
