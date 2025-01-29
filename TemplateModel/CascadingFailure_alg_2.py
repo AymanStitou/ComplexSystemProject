@@ -187,8 +187,20 @@ class CascadingFailureSimulation:
 
         def update(frame):
             ax.clear()
-            if frame < len(failed_nodes_timestep):
-                newly_failed = failed_nodes_timestep[frame]
+            if frame == 0: 
+                colors = []
+                for node in self.original_G.nodes:
+                    if node in initial_failures:
+                        colors.append('red')
+                    else: 
+                        colors.append('green')
+                nx.draw(self.original_G, pos, ax=ax, with_labels=True, node_color=colors, node_size=800, font_size=10, font_weight='bold')
+                ax.set_title(f"Cascading Failures in Nodes - Timestep {frame + 1}")
+                legend_elements = [Patch(facecolor=color, edgecolor='black', label=meaning) 
+                                   for color, meaning in color_meanings.items()]
+                ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.8, 1))
+            elif frame <= len(failed_nodes_timestep): 
+                newly_failed = failed_nodes_timestep[frame-1]
                 cumulative_failed.update(newly_failed)
                 colors = []
                 for node in self.original_G.nodes:
@@ -202,7 +214,7 @@ class CascadingFailureSimulation:
                 ax.set_title(f"Cascading Failures in Nodes - Timestep {frame + 1}")
                 legend_elements = [Patch(facecolor=color, edgecolor='black', label=meaning) 
                                    for color, meaning in color_meanings.items()]
-                ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1))
+                ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.8, 1))
             else:
                 # Final frame
                 colors = []
@@ -217,7 +229,7 @@ class CascadingFailureSimulation:
                 ax.set_title("Cascading Failures in Nodes - Final State")
                 legend_elements = [Patch(facecolor=color, edgecolor='black', label=meaning) 
                                    for color, meaning in color_meanings.items()]
-                ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1))
+                ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.8, 1))
             ax.set_xlim(-1.1, 1.1)
             ax.set_ylim(-1.1, 1.1)
 
