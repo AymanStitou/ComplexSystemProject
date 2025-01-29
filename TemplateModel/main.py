@@ -35,7 +35,7 @@ for sim in range(num_simulations):
 
         for idx, alpha in enumerate(alpha_values):
             simulation.calculate_initial_load(centrality_type='degree')
-            simulation.calculate_capacity(alpha=alpha, beta=1)
+            simulation.calculate_capacity(alpha=alpha, beta=1.2)
 
             failed_nodes, CF, I, failed_nodes_list = simulation.simulate_cascading_failure(
                 initial_failures, use_prevention=mechanism

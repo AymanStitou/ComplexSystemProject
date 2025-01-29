@@ -54,8 +54,6 @@ class CascadingFailureSimulation:
             load = self.G.nodes[node]['load']
             self.G.nodes[node]['capacity'] = (1 + alpha) * (load ** beta)
 
-    ### ✅ NEW PREVENTION MECHANISMS ###
-
     def dynamic_load_redistribution(self, failed_nodes):
         """
         Redistributes load based on available capacity.
