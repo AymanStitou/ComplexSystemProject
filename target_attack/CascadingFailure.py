@@ -76,9 +76,15 @@ class CascadingFailureSimulation:
             self.G.nodes[node]['capacity'] = (1 + alpha) * (load ** beta)
             sum_capacity += self.G.nodes[node]['capacity']
         if total_capacity: 
-            print("sum capacity before scaling:", sum_capacity)
+            # print("sum capacity before scaling:", sum_capacity)
+            # counter = 0
             for node in self.G.nodes:
                 self.G.nodes[node]['capacity'] *= total_capacity/sum_capacity
+                if self.G.nodes[node]['load'] > self.G.nodes[node]['capacity']: 
+                    return ValueError('Load excceeds capcity. Input another total_capacity value for rescaling. ')
+                # counter += self.G.nodes[node]['capacity']
+            # print("sum capacity after scaling:", counter)
+            # print("total_capacity:", total_capacity)
 
     def prevent_cascading_failure(self, failed_nodes):
         affected_neighbors = set()
