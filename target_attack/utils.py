@@ -53,7 +53,7 @@ def simulate_and_average(G, centrality_types, num_simulations=25, target_attack=
         return results
     
     else: 
-        for _ in range(num_simulations, attacked_type='random'):
+        for _ in range(num_simulations):
             initial_failures = random.sample(range(1,total_nodes-1), num_failures)
             for centrality in centrality_types:
                 if alpha_list is not None: 
@@ -62,7 +62,7 @@ def simulate_and_average(G, centrality_types, num_simulations=25, target_attack=
                     I = run_simulation(initial_failures, centrality, simulation, beta_list=beta_list, alpha=alpha, use_prevention=use_prevention)
                 else: 
                     raise ValueError("No input of varying variables (alpha/beta)")
-                results[centrality] = I
+                results[centrality].append(I)
                 print(fr"Finish simulation of the centrality type: {centrality}")
 
         # Compute mean I_list for each centrality type across simulations
