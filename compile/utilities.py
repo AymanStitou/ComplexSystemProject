@@ -26,7 +26,7 @@ def get_networkgraph(filepath):
 
     return graph
 
-def create_ER_network(graph, p = 0.2):
+def create_ER_network(graph, p = 0.0005):
     n = graph.number_of_nodes()  
 
     ER_graph = nx.erdos_renyi_graph(n, p)
@@ -93,14 +93,14 @@ def compare_graph_metrics(graph1, graph2):
     graph2_assortativity = calculate_degree_assortativity(graph2)
     print(f"Degree Assortativity - Network1: {graph1_assortativity:0.5f}, Network2: {graph2_assortativity:0.5f}")
 
-def create_BA_network(graph, m = 3):
+def create_BA_network(graph, m = 2):
     n = graph.number_of_nodes() 
     BA_graph = nx.barabasi_albert_graph(n, m)
    
     logging.info(f"Barabasi-Albert graph created with {n} nodes and {BA_graph.number_of_edges()} edges.")
     return BA_graph
 
-def create_WS_network(graph, k = 3, p=0.1):
+def create_WS_network(graph, k = 4, p=0.1):
     n = graph.number_of_nodes() 
     WS_graph = nx.watts_strogatz_graph(n, k, p)
 
@@ -114,7 +114,7 @@ def run_simulation(graph, alpha, initial_failures, centrality_type, simulation, 
     """
     n_failed_nodes = []
     I_list = []
-
+    logging.info('Running Simulation for different alpha values')
     for a in alpha:
         simulation.calculate_initial_load(centrality_type=centrality_type)
         simulation.calculate_capacity(alpha=a, beta=beta)  # Fix beta to 1
@@ -133,7 +133,7 @@ def simulate_and_average(graph, alpha, centrality_types, num_simulations=25, bet
     total_nodes = len(graph.nodes)
     simulation = CascadingFailureSimulation(graph)
     simulation.calculate_centrality_measures()
-
+    logging.info('Running ')
     for i in range(num_simulations):
         num_failures = max(1, int(total_nodes * 0.01))  # 1% random failures
         initial_failures = random.sample(range(1,total_nodes-1), num_failures)
@@ -169,5 +169,6 @@ def load_results_from_csv(filename):
     results = df.drop(columns=["Alpha"]).to_dict(orient="list")
     
     return alpha, results
+
 
 

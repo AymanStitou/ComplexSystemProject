@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import logging
 import utilities as utils
+import networkx as nx
+
 def plot_degree_dists(G_degrees, ER_degrees):
     logging.info('Plotting the degree distribution histograms')
     plt.figure(figsize=(10, 6))
