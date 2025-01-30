@@ -16,7 +16,7 @@ simulation = CascadingFailureSimulation(G)
 simulation.calculate_centrality_measures()
 
 # Define alpha values and prevention mechanisms
-alpha_values = np.linspace(0.2, 0.6, 25)
+alpha_values = np.linspace(0, 0.6, 25)
 prevention_mechanisms = ["None", "localized_capacity_boost", "dynamic_load_redistribution", "controlled_failure_isolation", "prevent_cascading_failure"]
 num_simulations = 20  # Number of runs to average over
 

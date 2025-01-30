@@ -29,7 +29,7 @@ class CascadingFailureSimulation:
 
         for node in self.G.nodes:
             self.G.nodes[node]['degree_centrality'] = degree_centrality[node] * (self.N - 1)
-            self.G.nodes[node]['betweenness_centrality'] = betweenness_centrality[node]
+            self.G.nodes[node]['betweenness_centrality'] = betweenness_centrality[node] 
             self.G.nodes[node]['closeness_centrality'] = closeness_centrality[node] * (self.N - 1)
 
     def calculate_initial_load(self, centrality_type='degree'):
@@ -137,16 +137,94 @@ class CascadingFailureSimulation:
 
             self.G.nodes[node]['load'] = total_load
 
+    # def simulate_cascading_failure(self, initial_failures, use_prevention="None"):
+    #     assert all(node in self.G for node in initial_failures), "Error: One or more initial failure nodes are not in the graph!"
+    #     failed_nodes = set(initial_failures)
+    #     queue = list(initial_failures)
+    #     failed_nodes_list = list()
+
+    #     if use_prevention == "localized_capacity_boost":
+    #         self.localized_capacity_boost(failed_nodes)
+
+    #     while queue:
+    #         # Apply prevention mechanisms dynamically
+    #         if use_prevention == "dynamic_load_redistribution":
+    #             self.dynamic_load_redistribution(failed_nodes)
+    #         elif use_prevention == "controlled_failure_isolation":
+    #             self.controlled_failure_isolation(failed_nodes)
+    #         elif use_prevention == "prevent_cascading_failure":
+    #             self.prevent_cascading_failure(failed_nodes)
+
+    #         node = queue.pop(0)
+    #         neighbors = list(self.G.successors(node)) if self.G.is_directed() else list(self.G.neighbors(node))
+    #         sum_neighbours = sum([self.G.nodes[neighbor]['capacity'] for neighbor in neighbors])
+
+    #         if neighbors:
+    #             for neighbor in neighbors:
+    #                 if neighbor not in failed_nodes:
+    #                     if sum_neighbours == 0:
+    #                         self.G.nodes[neighbor]['load'] += self.G.nodes[node]['load'] / len(neighbors)
+    #                     else:
+    #                         redistributed_load = (
+    #                             self.G.nodes[node]['load'] * (self.G.nodes[neighbor]['capacity'] / sum_neighbours)
+    #                         )
+    #                         self.G.nodes[neighbor]['load'] += redistributed_load
+
+    #                     if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
+    #                         failed_nodes.add(neighbor)
+    #                         queue.append(neighbor)
+    #                         failed_nodes_list.append(neighbor)
+
+    #         # # Apply prevention mechanisms dynamically
+    #         # if use_prevention == "dynamic_load_redistribution":
+    #         #     self.dynamic_load_redistribution(failed_nodes)
+    #         # elif use_prevention == "controlled_failure_isolation":
+    #         #     self.controlled_failure_isolation(failed_nodes)
+    #         # elif use_prevention == "prevent_cascading_failure":
+    #         #     self.prevent_cascading_failure(failed_nodes)
+
+    #     NA = len(initial_failures)
+    #     self.CF = NA / (len(failed_nodes) * self.N)
+    #     I = len(failed_nodes) / self.N 
+
+    #     return failed_nodes, self.CF, I, failed_nodes_list 
     def simulate_cascading_failure(self, initial_failures, use_prevention="None"):
         assert all(node in self.G for node in initial_failures), "Error: One or more initial failure nodes are not in the graph!"
+        
         failed_nodes = set(initial_failures)
-        queue = list(initial_failures)
-        failed_nodes_list = list()
+        failed_nodes_list = list(initial_failures)
+        LS1 = set(initial_failures)  # Nodes currently failing
+        LS2 = set()  # Nodes that have already failed
 
         if use_prevention == "localized_capacity_boost":
             self.localized_capacity_boost(failed_nodes)
 
-        while queue:
+        while LS1:
+            next_failures = set()
+            
+            for node in LS1:
+                neighbors = list(self.G.successors(node)) if self.G.is_directed() else list(self.G.neighbors(node))
+                sum_neighbors_capacity = sum(self.G.nodes[n]['capacity'] for n in neighbors if n not in failed_nodes)
+
+                for neighbor in neighbors:
+                    if neighbor not in failed_nodes:
+                        if sum_neighbors_capacity == 0:
+                            # If no available capacity, node fails immediately
+                            next_failures.add(neighbor)
+                        else:
+                            redistributed_load = (
+                                self.G.nodes[node]['load'] * (self.G.nodes[neighbor]['capacity'] / sum_neighbors_capacity)
+                            )
+                            self.G.nodes[neighbor]['load'] += redistributed_load
+
+                            if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
+                                next_failures.add(neighbor)
+
+            failed_nodes.update(next_failures)
+            failed_nodes_list.extend(next_failures)
+            LS2.update(LS1)
+            LS1 = next_failures  # Update LS1 with the new set of failing nodes
+
             # Apply prevention mechanisms dynamically
             if use_prevention == "dynamic_load_redistribution":
                 self.dynamic_load_redistribution(failed_nodes)
@@ -155,39 +233,11 @@ class CascadingFailureSimulation:
             elif use_prevention == "prevent_cascading_failure":
                 self.prevent_cascading_failure(failed_nodes)
 
-            node = queue.pop(0)
-            neighbors = list(self.G.successors(node)) if self.G.is_directed() else list(self.G.neighbors(node))
-            sum_neighbours = sum([self.G.nodes[neighbor]['capacity'] for neighbor in neighbors])
-
-            if neighbors:
-                for neighbor in neighbors:
-                    if neighbor not in failed_nodes:
-                        if sum_neighbours == 0:
-                            self.G.nodes[neighbor]['load'] += self.G.nodes[node]['load'] / len(neighbors)
-                        else:
-                            redistributed_load = (
-                                self.G.nodes[node]['load'] * (self.G.nodes[neighbor]['capacity'] / sum_neighbours)
-                            )
-                            self.G.nodes[neighbor]['load'] += redistributed_load
-
-                        if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
-                            failed_nodes.add(neighbor)
-                            queue.append(neighbor)
-                            failed_nodes_list.append(neighbor)
-
-            # # Apply prevention mechanisms dynamically
-            # if use_prevention == "dynamic_load_redistribution":
-            #     self.dynamic_load_redistribution(failed_nodes)
-            # elif use_prevention == "controlled_failure_isolation":
-            #     self.controlled_failure_isolation(failed_nodes)
-            # elif use_prevention == "prevent_cascading_failure":
-            #     self.prevent_cascading_failure(failed_nodes)
-
         NA = len(initial_failures)
         self.CF = NA / (len(failed_nodes) * self.N)
         I = len(failed_nodes) / self.N 
 
-        return failed_nodes, self.CF, I, failed_nodes_list 
+        return failed_nodes, self.CF, I, failed_nodes_list
     
     def visualize_network(self, failed_nodes):
         """
