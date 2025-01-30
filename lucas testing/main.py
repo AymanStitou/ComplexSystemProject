@@ -90,7 +90,7 @@ def plot_results_from_csv(filename):
     plt.show()
 
 if __name__ == "__main__":
-    get_new_data = False
+    get_new_data = True
     if get_new_data == True:
         G3 = nx.read_graphml("us_network.graphml")
         mapping3 = {node: int(node) for node in G3.nodes()}
