@@ -1,4 +1,4 @@
-from CascadingFailure import CascadingFailureSimulation
+from CascadingFailure_alg_2 import CascadingFailureSimulation
 import matplotlib.pyplot as plt 
 import random
 import pandas as pd
@@ -15,14 +15,14 @@ def run_simulation(initial_failures, centrality_type, simulation, alpha=0.2, bet
         for a in alpha_list:
             simulation.calculate_initial_load(centrality_type=centrality_type)
             simulation.calculate_capacity(alpha=a, beta=beta)  
-            _, _, I, _ = simulation.simulate_cascading_failure(initial_failures, use_prevention=use_prevention)
+            _, _, I, _ = simulation.simulate_cascading_failure(initial_failures)
             I_list.append(I)
     
     if beta_list is not None: 
         for b in beta_list: 
             simulation.calculate_initial_load(centrality_type=centrality_type)
             simulation.calculate_capacity(alpha=alpha, beta=b) 
-            _, _, I, _ = simulation.simulate_cascading_failure(initial_failures, use_prevention=use_prevention)
+            _, _, I, _ = simulation.simulate_cascading_failure(initial_failures)
             I_list.append(I)
 
     return I_list
@@ -106,7 +106,7 @@ def simulate_and_average(G, centrality_types, num_simulations=25, target_attack=
         
         return mean_results
 
-def plot_line_graph(results, alpha=0.2, beta=1, alpha_list=None, beta_list=None, network_type=None, file_name=None): 
+def plot_line_graph(results, alpha=0.2, beta=1, alpha_list=None, beta_list=None, capacity_list=None, network_type=None, file_name=None): 
     # plot the figures for the three network
     plt.figure(figsize=(10, 6))
     for centrality, mean_result in results.items():
@@ -118,6 +118,10 @@ def plot_line_graph(results, alpha=0.2, beta=1, alpha_list=None, beta_list=None,
             plt.plot(beta_list, mean_result, label=f"{centrality.capitalize()} Centrality", marker='o')
             plt.title(fr"Mean Fraction of Failed Nodes vs. $\beta$ ({network_type}), with $\alpha$={alpha}")
             plt.xlabel(fr"$\beta$")
+        elif capacity_list is not None: 
+            plt.plot(capacity_list, mean_result, label=f"{centrality.capitalize()} Centrality", marker='o')
+            plt.title(fr"Mean Fraction of Failed Nodes vs. Total Capacity ({network_type})")
+            plt.xlabel("Total Capacity")
         else:
             raise ValueError("No input of varying variables (alpha/beta)")
     plt.ylabel("Mean Fraction of Failed Nodes (I)")

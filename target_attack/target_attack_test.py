@@ -5,7 +5,7 @@ import numpy as np
 import random
 
 
-G = nx.read_graphml("usnetwork/us_network.graphml")
+G = nx.read_graphml("degree_distribution/toy_network_undirected.graphml")
 mapping = {node: int(node) for node in G.nodes()}
 G = nx.relabel_nodes(G, mapping)
 total_nodes = len(G.nodes())
@@ -37,7 +37,7 @@ simulation = CascadingFailureSimulation(G)
 simulation.calculate_centrality_measures()
 
 
-alpha_list = np.linspace(0,1.2,20)
+alpha_list = np.linspace(0,1.4,15)
 
 n_fail_nodes = []
 CF_list = []
@@ -48,8 +48,9 @@ for a in alpha_list:
     simulation.calculate_initial_load(centrality_type='degree')
     simulation.calculate_capacity(alpha=a, beta=1.2)
 
-    initial_failures = simulation.rank_centrality(centrality_type='degree', length=num_targeted_nodes) 
-    failed_nodes, CF, I , failed_nodes_list= simulation.simulate_cascading_failure(initial_failures, use_prevention=False)
+    initial_failures = simulation.rank_centrality(centrality_type='degree', length=2) 
+    # initial_failures = [1, 9]
+    failed_nodes, CF, I , failed_nodes_list= simulation.simulate_cascading_failure(initial_failures)
     n_fail_nodes.append(len(failed_nodes))
     I_list.append(I)
     CF_list.append(CF)
@@ -57,13 +58,13 @@ for a in alpha_list:
     #simulation.visualize_network(failed_nodes)
 
 # plot CF vs beta/alpha
-# plt.scatter(alpha_list, CF_list, color = "red")
-# plt.plot(alpha_list, CF_list, color = "blue")
-# plt.xlabel("value of alpha")
-# plt.ylabel("CF")
-# plt.title("How CF changes with the value of alhpa")
-# plt.grid()
-# plt.show()
+plt.scatter(alpha_list, CF_list, color = "red")
+plt.plot(alpha_list, CF_list, color = "blue")
+plt.xlabel("value of alpha")
+plt.ylabel("CF")
+plt.title("How CF changes with the value of alhpa")
+plt.grid()
+plt.show()
 
 # plot I vs beta/alpha
 plt.scatter(alpha_list, I_list, color = "red")

@@ -66,7 +66,7 @@ class CascadingFailureSimulation:
                 else:
                     raise ValueError(f"Unknown centrality type: {centrality_type}")
 
-    def calculate_capacity(self, alpha=0.2, beta=1.5, total_capacity=None):
+    def calculate_capacity(self, alpha=0.2, beta=1.05, total_capacity=None):
         """
         Capacity = (1 + alpha) * (load^beta).
         """
@@ -76,15 +76,15 @@ class CascadingFailureSimulation:
             self.G.nodes[node]['capacity'] = (1 + alpha) * (load ** beta)
             sum_capacity += self.G.nodes[node]['capacity']
         if total_capacity: 
-            # print("sum capacity before scaling:", sum_capacity)
-            # counter = 0
+            print("sum capacity before scaling:", sum_capacity)
+            counter = 0
             for node in self.G.nodes:
                 self.G.nodes[node]['capacity'] *= total_capacity/sum_capacity
                 if self.G.nodes[node]['load'] > self.G.nodes[node]['capacity']: 
-                    return ValueError('Load excceeds capcity. Input another total_capacity value for rescaling. ')
-                # counter += self.G.nodes[node]['capacity']
-            # print("sum capacity after scaling:", counter)
-            # print("total_capacity:", total_capacity)
+                    raise ValueError('Load excceeds capcity. Input another total_capacity value for rescaling. ')
+                counter += self.G.nodes[node]['capacity']
+            print("sum capacity after scaling:", counter)
+            print("total_capacity:", total_capacity)
 
     def prevent_cascading_failure(self, failed_nodes):
         affected_neighbors = set()
