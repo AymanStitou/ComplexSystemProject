@@ -1,0 +1,17 @@
+The folder 'target_attack' mainly contains the following code:
+
+1. Making changes to the function in "CascadingFailure.py".
+(1) adding the argument (sum_centrality=None) to the function calculate_centrality_measures
+(2) adding the argument (total_capacity=None) to the function calculate_capacity
+By doing that we can scale the total load to the same value and generate the Result 1. Running code without scaling is also fine, so there should be no conflict with the original "CascadingFailure.py".
+
+2. Adding the file "utils.py". This file contains all the functions used for running simulations multiple times, generating graphs, and saving the results to a .csv file. However, I'm not sure whether Jessie uploaded a modified version.
+
+3. Adding the file "target_attack_capacity.py". This is the file I used to run for the results in the slide.
+
+4. Adding the file "target_attack_varying_alpha_beta.py". This is the file I used to run for target attack results before, but Jessie generates the final result so she probably has her version. Then my version can be deleted if she did not use it. 
+
+5. Adding the file "random versus target.ipynb". This is written by Jessie so I think she will update the final version she used.
+
+6. Adding the folder "csv_result". These are the data used for our results. 
+
