@@ -51,49 +51,54 @@ class CascadingFailureSimulation:
             load = self.G.nodes[node]['load']
             self.G.nodes[node]['capacity'] = (1 + alpha) * (load ** beta)
 
-    def simulate_cascading_failure(self, initial_failures):
-        """
-        Initiates cascading failures with given initial failures.
-        Returns:
-            failed_nodes: set of all failed nodes
-            self.CF: measure as defined in your code
-            I: fraction of nodes that failed
-        """
-        failed_nodes = set(initial_failures)
-        queue = list(initial_failures)
+    def simulate_cascading_failure(self, initial_failures, use_prevention="None"):
+        assert all(node in self.G for node in initial_failures), "Error: One or more initial failure nodes are not in the graph!"
         
-        while queue:
-            node = queue.pop(0)
-            # If directed graph, use successors; otherwise use neighbors
-            if self.G.is_directed():
-                neighbors = list(self.G.successors(node))
-            else:
-                neighbors = list(self.G.neighbors(node))
+        failed_nodes = set(initial_failures)
+        failed_nodes_list = list(initial_failures)
+        LS1 = set(initial_failures)  # Nodes currently failing
+        LS2 = set()  # Nodes that have already failed
 
-            # Sum the capacities of the neighbors
-            sum_neighbours = sum([self.G.nodes[neighbor]['capacity'] for neighbor in neighbors])
+        if use_prevention == "localized_capacity_boost":
+            self.localized_capacity_boost(failed_nodes)
 
-            if neighbors:
+        while LS1:
+            next_failures = set()
+            
+            for node in LS1:
+                neighbors = list(self.G.successors(node)) if self.G.is_directed() else list(self.G.neighbors(node))
+                sum_neighbors_capacity = sum(self.G.nodes[n]['capacity'] for n in neighbors if n not in failed_nodes)
+
                 for neighbor in neighbors:
                     if neighbor not in failed_nodes:
-                        if sum_neighbours == 0:
-                            # If neighbors have zero capacity (edge case)
-                            self.G.nodes[neighbor]['load'] += self.G.nodes[node]['load'] / len(neighbors)
-                            failed_nodes.add(neighbor)
-                            queue.append(neighbor)
+                        if sum_neighbors_capacity == 0:
+                            # If no available capacity, node fails immediately
+                            next_failures.add(neighbor)
                         else:
-                            # Redistribute load proportionally by capacity
-                            redistributed_load = (self.G.nodes[node]['load'] *
-                                                  (self.G.nodes[neighbor]['capacity'] / sum_neighbours))
+                            redistributed_load = (
+                                self.G.nodes[node]['load'] * (self.G.nodes[neighbor]['capacity'] / sum_neighbors_capacity)
+                            )
                             self.G.nodes[neighbor]['load'] += redistributed_load
-                            # Check failure condition
+
                             if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
-                                failed_nodes.add(neighbor)
-                                queue.append(neighbor)
+                                next_failures.add(neighbor)
+
+            failed_nodes.update(next_failures)
+            failed_nodes_list.extend(next_failures)
+            LS2.update(LS1)
+            LS1 = next_failures  # Update LS1 with the new set of failing nodes
+
+            # Apply prevention mechanisms dynamically
+            if use_prevention == "dynamic_load_redistribution":
+                self.dynamic_load_redistribution(failed_nodes)
+            elif use_prevention == "controlled_failure_isolation":
+                self.controlled_failure_isolation(failed_nodes)
+            elif use_prevention == "prevent_cascading_failure":
+                self.prevent_cascading_failure(failed_nodes)
 
         NA = len(initial_failures)
         self.CF = NA / (len(failed_nodes) * self.N)
-        #I = len(failed_nodes) / self.N 
+        I = len(failed_nodes) / self.N 
 
         return failed_nodes
 
@@ -115,3 +120,30 @@ class CascadingFailureSimulation:
             print(f"Node {node}: Degree={self.G.nodes[node]['degree_centrality']:.2f}, "
                   f"Betweenness={self.G.nodes[node]['betweenness_centrality']:.2f}, "
                   f"Closeness={self.G.nodes[node]['closeness_centrality']:.2f}")
+
+    def rank_centrality(self, centrality_type='degree', length = None): 
+        """
+            Ranks the nodes in the network based on the centrality.
+
+            Parameters:
+            centrality_type (str): The type of centrality to rank.
+            length (int): The number of top-ranked nodes to display.
+        """
+
+        if centrality_type == 'degree': 
+            degree_centralities = {node: self.G.nodes[node]['degree_centrality'] for node in self.G.nodes}
+            rank_centrality_results = sorted(degree_centralities.items(), key=lambda x: x[1], reverse=True)
+        elif centrality_type == 'betweenness': 
+            betweenness_centralities = {node: self.G.nodes[node]['betweenness_centrality'] for node in self.G.nodes}
+            rank_centrality_results = sorted(betweenness_centralities.items(), key=lambda x: x[1], reverse=True)
+        elif centrality_type == 'closeness': 
+            closeness_centralities = {node: self.G.nodes[node]['closeness_centrality'] for node in self.G.nodes}
+            rank_centrality_results = sorted(closeness_centralities.items(), key=lambda x: x[1], reverse=True)
+        else:
+            raise ValueError(f"Unknown centrality type: {centrality_type}")
+        
+        # for i, (node, centrality) in enumerate(rank_centrality_results[:length], 1):
+        #     print(f"{i}: The node {node} has the centrality of {centrality}")
+        ranked_nodes = [node for node, centrality in rank_centrality_results]
+        
+        return ranked_nodes[:length]
