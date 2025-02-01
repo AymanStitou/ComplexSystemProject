@@ -17,17 +17,16 @@ G3 = nx.read_graphml("degree_distribution/us_network.graphml")
 mapping3 = {node: int(node) for node in G3.nodes()}
 G3 = nx.relabel_nodes(G3, mapping3)
 
+rewired_G = nx.read_graphml("rewire.graphml")
+mapping_rewire = {node: int(node) for node in rewired_G.nodes()}
+rewired_G = nx.relabel_nodes(rewired_G, mapping_rewire)
 
 # initialize parameters and empty lists
 alpha_list = np.linspace(0,1.2,20)
 beta_list = np.linspace(1,1.5,20)
 alpha_value = 0.3
 beta_value = 1.2
-centrality_types = ["degree", "betweenness", "closeness"]
-
-# # for test
-# results_toy_varing_alpha = simulate_and_average(G, centrality_types, target_attack=True, beta=beta_value, alpha_list=alpha_list)
-# plot_line_graph(results_toy_varing_alpha, beta=beta_value, alpha_list=alpha_list, network_type="Toy Network", file_name="toy_network_test_2")
+centrality_types = ["degree"]
 
 # start simulation of the three networks with varying alpha
 results_toy_varing_alpha = simulate_and_average(G, centrality_types, target_attack=True, beta=beta_value, alpha_list=alpha_list)

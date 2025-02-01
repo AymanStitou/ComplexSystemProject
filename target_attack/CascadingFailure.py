@@ -26,34 +26,66 @@ class CascadingFailureSimulation:
         degree_centrality = nx.degree_centrality(self.G) 
         betweenness_centrality = nx.betweenness_centrality(self.G, normalized=False)
         closeness_centrality = nx.closeness_centrality(self.G)
+        sum_degree_centrality = 0
+        sum_betweenness_centrality = 0
+        sum_closeness_centrality = 0
 
         # Multiply degree centrality by (N - 1) so it matches typical "degree" count
         for node in self.G.nodes:
             self.G.nodes[node]['degree_centrality'] = degree_centrality[node] * (self.N - 1)
             self.G.nodes[node]['betweenness_centrality'] = betweenness_centrality[node]
             self.G.nodes[node]['closeness_centrality'] = closeness_centrality[node]
+            sum_degree_centrality += self.G.nodes[node]['degree_centrality']
+            sum_betweenness_centrality += self.G.nodes[node]['betweenness_centrality']
+            sum_closeness_centrality += self.G.nodes[node]['closeness_centrality']
+        return [sum_degree_centrality, sum_betweenness_centrality, sum_closeness_centrality]
 
-    def calculate_initial_load(self, centrality_type='degree'):
+    def calculate_initial_load(self, centrality_type='degree', sum_centrality=None):
         """
         Sets node load = chosen centrality measure.
         """
-        for node in self.G.nodes:
-            if centrality_type == 'degree':
-                self.G.nodes[node]['load'] = self.G.nodes[node]['degree_centrality']
-            elif centrality_type == 'betweenness':
-                self.G.nodes[node]['load'] = self.G.nodes[node]['betweenness_centrality']
-            elif centrality_type == 'closeness':
-                self.G.nodes[node]['load'] = self.G.nodes[node]['closeness_centrality']
-            else:
-                raise ValueError(f"Unknown centrality type: {centrality_type}")
+        if sum_centrality: 
+            sum_degree_centrality, sum_betweenness_centrality, sum_closeness_centrality = sum_centrality
+            for node in self.G.nodes:
+                if centrality_type == 'degree':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['degree_centrality']
+                elif centrality_type == 'betweenness':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['betweenness_centrality'] * sum_degree_centrality/sum_betweenness_centrality
+                elif centrality_type == 'closeness':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['closeness_centrality'] * sum_degree_centrality/sum_closeness_centrality
+                else:
+                    raise ValueError(f"Unknown centrality type: {centrality_type}")
+        else: 
+            for node in self.G.nodes:
+                if centrality_type == 'degree':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['degree_centrality']
+                elif centrality_type == 'betweenness':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['betweenness_centrality']
+                elif centrality_type == 'closeness':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['closeness_centrality']
+                else:
+                    raise ValueError(f"Unknown centrality type: {centrality_type}")
 
-    def calculate_capacity(self, alpha=0.2, beta=1.5):
+    def calculate_capacity(self, alpha=0, beta=1.0, total_capacity=None):
         """
         Capacity = (1 + alpha) * (load^beta).
         """
+        sum_capacity = 0
         for node in self.G.nodes:
             load = self.G.nodes[node]['load']
             self.G.nodes[node]['capacity'] = (1 + alpha) * (load ** beta)
+            sum_capacity += self.G.nodes[node]['capacity']
+        if total_capacity: 
+            print("sum capacity before scaling:", sum_capacity)
+            counter = 0
+            for node in self.G.nodes:
+                self.G.nodes[node]['capacity'] *= total_capacity/sum_capacity
+                if self.G.nodes[node]['load'] > self.G.nodes[node]['capacity']: 
+                    raise ValueError('Load excceeds capcity. Input another total_capacity value for rescaling. ')
+                counter += self.G.nodes[node]['capacity']
+            print("sum capacity after scaling:", counter)
+
+            print("total_capacity:", total_capacity)
 
     def prevent_cascading_failure(self, failed_nodes):
         affected_neighbors = set()
@@ -137,39 +169,49 @@ class CascadingFailureSimulation:
 
     #         self.G.nodes[node]['load'] = total_load
 
-
-    def simulate_cascading_failure(self, initial_failures, use_prevention=False):
+    def simulate_cascading_failure(self, initial_failures, use_prevention="None"):
+        assert all(node in self.G for node in initial_failures), "Error: One or more initial failure nodes are not in the graph!"
+        
         failed_nodes = set(initial_failures)
-        queue = list(initial_failures)
-        failed_nodes_list = list()
+        failed_nodes_list = list(initial_failures)
+        LS1 = set(initial_failures)  # Nodes currently failing
+        LS2 = set()  # Nodes that have already failed
 
-        while queue:
-            node = queue.pop(0)
-            if self.G.is_directed():
-                neighbors = list(self.G.successors(node))
-            else:
-                neighbors = list(self.G.neighbors(node))
+        if use_prevention == "localized_capacity_boost":
+            self.localized_capacity_boost(failed_nodes)
 
-            sum_neighbours = sum([self.G.nodes[neighbor]['capacity'] for neighbor in neighbors])
+        while LS1:
+            next_failures = set()
+            
+            for node in LS1:
+                neighbors = list(self.G.successors(node)) if self.G.is_directed() else list(self.G.neighbors(node))
+                sum_neighbors_capacity = sum(self.G.nodes[n]['capacity'] for n in neighbors if n not in failed_nodes)
 
-            if neighbors:
                 for neighbor in neighbors:
                     if neighbor not in failed_nodes:
-                        if sum_neighbours == 0:
-                            self.G.nodes[neighbor]['load'] += self.G.nodes[node]['load'] / len(neighbors)
-                            failed_nodes.add(neighbor)
-                            queue.append(neighbor)
-                            failed_nodes_list.append(neighbor)
+                        if sum_neighbors_capacity == 0:
+                            # If no available capacity, node fails immediately
+                            next_failures.add(neighbor)
                         else:
-                            redistributed_load = (self.G.nodes[node]['load'] *
-                                                (self.G.nodes[neighbor]['capacity'] / sum_neighbours))
+                            redistributed_load = (
+                                self.G.nodes[node]['load'] * (self.G.nodes[neighbor]['capacity'] / sum_neighbors_capacity)
+                            )
                             self.G.nodes[neighbor]['load'] += redistributed_load
-                            if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
-                                failed_nodes.add(neighbor)
-                                queue.append(neighbor)
-                                failed_nodes_list.append(neighbor)
 
-            if use_prevention:
+                            if self.G.nodes[neighbor]['load'] > self.G.nodes[neighbor]['capacity']:
+                                next_failures.add(neighbor)
+
+            failed_nodes.update(next_failures)
+            failed_nodes_list.extend(next_failures)
+            LS2.update(LS1)
+            LS1 = next_failures  # Update LS1 with the new set of failing nodes
+
+            # Apply prevention mechanisms dynamically
+            if use_prevention == "dynamic_load_redistribution":
+                self.dynamic_load_redistribution(failed_nodes)
+            elif use_prevention == "controlled_failure_isolation":
+                self.controlled_failure_isolation(failed_nodes)
+            elif use_prevention == "prevent_cascading_failure":
                 self.prevent_cascading_failure(failed_nodes)
 
         NA = len(initial_failures)
