@@ -21,8 +21,25 @@ def run_simulation(G, alpha, initial_failures, centrality_type, simulation, beta
         I_list.append(len(failed_nodes)/len(G))
 
     return I_list
+    
+def run_simulation_beta (G, beta, initial_failures, centrality_type, simulation, alpha = 0.3):
+    """
+    Run the cascading failure simulation for a specific network and centrality measure.
+    It returns a list of the number of failed nodes for each alpha value.
+    """
+    n_failed_nodes = []
+    I_list = []
 
-def simulate_and_average(G, alpha, centrality_types, num_simulations=25, beta=1):
+    for b in beta:
+        simulation.calculate_initial_load(centrality_type=centrality_type)
+        simulation.calculate_capacity(alpha, beta=b)  # Fix alpha to 0.3
+        failed_nodes = simulation.simulate_cascading_failure(initial_failures)
+        n_failed_nodes.append(len(failed_nodes))
+        I_list.append(len(failed_nodes)/len(G))
+
+    return I_list
+    
+def simulate_and_average(G, alpha, centrality_types, target_attack = False, num_simulations=30, beta = 1.2): # run each network for 25 times
     """
     Simulate the cascading failure multiple times and calculate the mean fraction of failed nodes for each centrality type.
     Return a dictionary with centrality measures as keys and mean I_list as values.
@@ -31,18 +48,26 @@ def simulate_and_average(G, alpha, centrality_types, num_simulations=25, beta=1)
     total_nodes = len(G.nodes)
     simulation = CascadingFailureSimulation(G)
     simulation.calculate_centrality_measures()
-
-    for i in range(num_simulations):
-        num_failures = max(1, int(total_nodes * 0.01))  # 1% random failures
-        initial_failures = random.sample(range(1,total_nodes-1), num_failures)
-        
+    num_failures = max(1, int(total_nodes * 0.01))
+    if target_attack: 
         for centrality in centrality_types:
-            I = run_simulation(G, alpha, initial_failures, centrality, simulation, beta=beta)
-            results[centrality].append(I)
+            initial_failures = simulation.rank_centrality(centrality, num_failures) 
+            I = run_simulation(G, alpha, initial_failures, centrality, simulation, beta = beta)
+            results[centrality] = (I, np.zeros_like(I))
+            return results
+    else:
+        for i in range(num_simulations):
+            initial_failures = random.sample(range(1,total_nodes-1), num_failures)
+            
+            for centrality in centrality_types:
+                I = run_simulation(G, alpha, initial_failures, centrality, simulation, beta = beta)
+                results[centrality].append(I)
     
-    # Compute mean I_list for each centrality type across simulations
-    mean_results = {centrality: np.mean(results[centrality], axis=0) for centrality in centrality_types}
-    return mean_results
+        # Compute mean I_list for each centrality type across simulations
+        mean_results = {centrality: np.mean(results[centrality], axis=0) for centrality in centrality_types}
+        std_results = {centrality: np.std(results[centrality], axis=0, ddof=1) for centrality in centrality_types}
+        return {centrality: (mean_results[centrality], std_results[centrality]) for centrality in centrality_types}
+
 
 
 def load_results_from_csv(filename):
@@ -61,12 +86,18 @@ def load_results_from_csv(filename):
 
 def save_results_to_csv(results, alpha, filename):
     """
-    Save simulation results to a CSV file.
-
+    Save simulation results (mean and standard deviation) to a CSV file.
     """
-    df = pd.DataFrame(results)
-    df.insert(0, "Alpha", alpha)
-    
+    data = {"Alpha": alpha}  
+
+    for centrality, (mean_I, std_I) in results.items():
+        data[f"{centrality}_mean"] = mean_I
+        data[f"{centrality}_std"] = std_I 
+
+    # Create DataFrame
+    df = pd.DataFrame(data)
+
+    # Save to CSV
     df.to_csv(filename, index=False)
     print(f"Results saved to {filename}")
 
@@ -86,6 +117,11 @@ G3 = nx.read_graphml("us_network.graphml")
 mapping3 = {node: int(node) for node in G3.nodes()}
 G3 = nx.relabel_nodes(G3, mapping3)
 
+# load the barabasi network
+G4 = nx.read_graphml("barabasi network.graphml")
+mapping4 = {node: int(node) for node in G4.nodes()}
+G4 = nx.relabel_nodes(G4, mapping3)
+
 
 # initialize parameters and empty lists
 alpha = np.linspace(0,1.2,10)
@@ -103,6 +139,8 @@ print(f"The result for the iceland network is: {results_ice}")
 results_us = simulate_and_average(G3, alpha, centrality_types)
 print(f"The result for the US network is: {results_us}")
 
+results_ba = simulate_and_average(G4, alpha, centrality_types, target_attack = True)
+print(f"The result for the BA network is: {results_ba}")
 
 # plot the figures for the three network
 plt.figure(figsize=(10, 6))
@@ -139,4 +177,5 @@ plt.show()
 save_results_to_csv(results_toy, alpha, "toy_network_results.csv")
 save_results_to_csv(results_ice, alpha, "iceland_network_results.csv")
 save_results_to_csv(results_us, alpha, "US_network_results.csv")
+save_results_to_csv(results_ba, alpha, "BA_network_results_beta_tar.csv")
 
