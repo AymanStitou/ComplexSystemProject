@@ -1,4 +1,4 @@
-from CascadingFailure_alg_2 import CascadingFailureSimulation
+from CascadingFailure import CascadingFailureSimulation
 import matplotlib.pyplot as plt 
 import random
 import pandas as pd
@@ -63,7 +63,7 @@ def simulate_and_average_capacity(G, centrality_types, capacity_list, num_simula
         
         return mean_results
 
-def simulate_and_average(G, centrality_types, num_simulations=25, target_attack=False, alpha=0.2, beta=1, alpha_list=None, beta_list=None, use_prevention=False):
+def simulate_and_average(G, centrality_types, num_simulations=30, target_attack=False, alpha=0, beta=1, alpha_list=None, beta_list=None, use_prevention=False):
     """
     Simulate the cascading failure multiple times and calculate the mean fraction of failed nodes for each centrality type.
     Return a dictionary with centrality measures as keys and mean I_list as values.
@@ -133,6 +133,8 @@ def plot_line_graph(results, alpha=0.2, beta=1, alpha_list=None, beta_list=None,
             plt.savefig(fr'target_attack/result_graph/{file_name}_beta_{beta}.png') 
         elif beta_list is not None: 
             plt.savefig(fr'target_attack/result_graph/{file_name}_alpha_{alpha}.png') 
+        elif capacity_list is not None:
+            plt.savefig(fr'target_attack/result_graph/{file_name}.png') 
         else: 
             raise ValueError("No input of varying variables (alpha/beta)")
     else: 

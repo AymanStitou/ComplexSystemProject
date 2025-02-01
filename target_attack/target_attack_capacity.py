@@ -19,9 +19,19 @@ G3 = nx.relabel_nodes(G3, mapping3)
 
 
 # initialize parameters and empty lists
-capacity_list=np.linspace(20,100,20)
+toy_capacity_list = np.linspace(61,110,40)
+iceland_capacity_list = np.linspace(407,600,40)
+us_capacity_list = np.linspace(13200, 30000, 10)
 centrality_types = ["degree", "betweenness", "closeness"]
 
-# for test
-test_results = simulate_and_average_capacity(G, centrality_types, capacity_list=capacity_list, num_simulations=25, target_attack=True)
-save_results_to_csv(test_results, fr"test.csv", capacity_list=capacity_list)
+toy_results = simulate_and_average_capacity(G, centrality_types, capacity_list=toy_capacity_list, target_attack=True)
+plot_line_graph(toy_results, network_type="Toy Network, with Target Attack", capacity_list=toy_capacity_list, file_name="toy_capacity_target")
+save_results_to_csv(toy_results, fr"toy_capacity_target.csv", capacity_list=toy_capacity_list)
+
+iceland_results = simulate_and_average_capacity(G2, centrality_types, capacity_list=iceland_capacity_list, target_attack=True)
+plot_line_graph(iceland_results, network_type="Iceland Network, with Target Attack", capacity_list=iceland_capacity_list, file_name="ice_capacity_target")
+save_results_to_csv(iceland_results, fr"ice_capacity_target.csv", capacity_list=iceland_capacity_list)
+
+us_results = simulate_and_average_capacity(G3, centrality_types, capacity_list=us_capacity_list, target_attack=True)
+plot_line_graph(us_results, network_type="US Network, with Target Attack", capacity_list=us_capacity_list, file_name="us_capacity_target")
+save_results_to_csv(us_results, fr"us_capacity_target.csv", capacity_list=us_capacity_list)
