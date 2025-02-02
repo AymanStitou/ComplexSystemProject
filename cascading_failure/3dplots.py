@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import random
 
-from CascadingFailure import CascadingFailureSimulation
+from .CascadingFailure import CascadingFailureSimulation
 from mpl_toolkits.mplot3d import Axes3D
 
 def run_simulation_single_pair(G, alpha, beta, initial_failures, centrality_type, simulation):

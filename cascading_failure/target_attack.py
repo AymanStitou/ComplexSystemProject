@@ -1,4 +1,4 @@
-from CascadingFailure import CascadingFailureSimulation
+from .CascadingFailure import CascadingFailureSimulation
 import matplotlib.pyplot as plt 
 import random
 import pandas as pd

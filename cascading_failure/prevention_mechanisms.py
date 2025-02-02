@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 import pandas as pd
-from CascadingFailure import CascadingFailureSimulation
+from .CascadingFailure import CascadingFailureSimulation
 
 def load_network(filepath):
     G = nx.read_graphml(filepath)
@@ -42,7 +42,7 @@ def run_simulations(simulation, alpha_values, prevention_mechanisms, num_simulat
     
     return results
 
-def plot_results(results, alpha_values, prevention_mechanisms, num_simulations):
+def plot_results(results, alpha_values, prevention_mechanisms, num_simulations, saveplot):
     markers = ["o", "s", "D", "^", "x"]
     line_styles = ["-", "--", "-.", ":", "-"]
     
@@ -55,7 +55,9 @@ def plot_results(results, alpha_values, prevention_mechanisms, num_simulations):
     plt.ylabel("Average CF")
     plt.title(f"Cascading Failure Robustness (CF) vs Avg tot. capacity (Averaged over {num_simulations} Simulations)")
     plt.legend()
-    plt.grid()
+    plt.grid()    
+    if saveplot:
+        plt.savefig('results/plots/prevention_mechanism_CF.png')
     plt.show()
     
     plt.figure(figsize=(10, 6))
@@ -68,8 +70,10 @@ def plot_results(results, alpha_values, prevention_mechanisms, num_simulations):
     plt.title(f"Fraction of Failed Nodes (I) vs Avg tot. capacity (Averaged over {num_simulations} Simulations)")
     plt.legend()
     plt.grid()
+    
+    if saveplot:
+        plt.savefig('results/plots/prevention_mechanism_I.png')
     plt.show()
-
 def save_results_to_csv(results, alpha_values, num_simulations, filename):
     df = pd.DataFrame({"alpha": alpha_values})
     for mechanism in results:

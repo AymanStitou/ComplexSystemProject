@@ -21,38 +21,73 @@ class CascadingFailureSimulation:
 
     def calculate_centrality_measures(self):
         """
-        Computes and stores centrality measures.
+        Calculates degree, betweenness, and closeness centralities
+        and stores them as node attributes.
         """
-        degree_centrality = nx.degree_centrality(self.G)
+        degree_centrality = nx.degree_centrality(self.G) 
         betweenness_centrality = nx.betweenness_centrality(self.G, normalized=False)
         closeness_centrality = nx.closeness_centrality(self.G)
+        sum_degree_centrality = 0
+        sum_betweenness_centrality = 0
+        sum_closeness_centrality = 0
 
+        # Multiply degree centrality by (N - 1) so it matches typical "degree" count
         for node in self.G.nodes:
             self.G.nodes[node]['degree_centrality'] = degree_centrality[node] * (self.N - 1)
-            self.G.nodes[node]['betweenness_centrality'] = betweenness_centrality[node] 
-            self.G.nodes[node]['closeness_centrality'] = closeness_centrality[node] * (self.N - 1)
+            self.G.nodes[node]['betweenness_centrality'] = betweenness_centrality[node]
+            self.G.nodes[node]['closeness_centrality'] = closeness_centrality[node]
+            sum_degree_centrality += self.G.nodes[node]['degree_centrality']
+            sum_betweenness_centrality += self.G.nodes[node]['betweenness_centrality']
+            sum_closeness_centrality += self.G.nodes[node]['closeness_centrality']
+        return [sum_degree_centrality, sum_betweenness_centrality, sum_closeness_centrality]
 
-    def calculate_initial_load(self, centrality_type='degree'):
+    def calculate_initial_load(self, centrality_type='degree', sum_centrality=None):
         """
-        Assigns node load based on centrality type.
+        Sets node load = chosen centrality measure.
         """
-        for node in self.G.nodes:
-            if centrality_type == 'degree':
-                self.G.nodes[node]['load'] = self.G.nodes[node]['degree_centrality']
-            elif centrality_type == 'betweenness':
-                self.G.nodes[node]['load'] = self.G.nodes[node]['betweenness_centrality']
-            elif centrality_type == 'closeness':
-                self.G.nodes[node]['load'] = self.G.nodes[node]['closeness_centrality']
-            else:
-                raise ValueError(f"Unknown centrality type: {centrality_type}")
+        if sum_centrality: 
+            sum_degree_centrality, sum_betweenness_centrality, sum_closeness_centrality = sum_centrality
+            for node in self.G.nodes:
+                if centrality_type == 'degree':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['degree_centrality']
+                elif centrality_type == 'betweenness':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['betweenness_centrality'] * sum_degree_centrality/sum_betweenness_centrality
+                elif centrality_type == 'closeness':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['closeness_centrality'] * sum_degree_centrality/sum_closeness_centrality
+                else:
+                    raise ValueError(f"Unknown centrality type: {centrality_type}")
+        else: 
+            for node in self.G.nodes:
+                if centrality_type == 'degree':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['degree_centrality']
+                elif centrality_type == 'betweenness':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['betweenness_centrality']
+                elif centrality_type == 'closeness':
+                    self.G.nodes[node]['load'] = self.G.nodes[node]['closeness_centrality']
+                else:
+                    raise ValueError(f"Unknown centrality type: {centrality_type}")
 
-    def calculate_capacity(self, alpha=0.2, beta=1.5):
+
+    def calculate_capacity(self, alpha=0, beta=1.0, total_capacity=None):
         """
-        Sets node capacity: (1 + alpha) * (load^beta).
+        Capacity = (1 + alpha) * (load^beta).
         """
+        sum_capacity = 0
         for node in self.G.nodes:
             load = self.G.nodes[node]['load']
             self.G.nodes[node]['capacity'] = (1 + alpha) * (load ** beta)
+            sum_capacity += self.G.nodes[node]['capacity']
+        if total_capacity: 
+            print("sum capacity before scaling:", sum_capacity)
+            counter = 0
+            for node in self.G.nodes:
+                self.G.nodes[node]['capacity'] *= total_capacity/sum_capacity
+                if self.G.nodes[node]['load'] > self.G.nodes[node]['capacity']: 
+                    raise ValueError('Load excceeds capcity. Input another total_capacity value for rescaling. ')
+                counter += self.G.nodes[node]['capacity']
+            print("sum capacity after scaling:", counter)
+
+            print("total_capacity:", total_capacity)
 
     def dynamic_load_redistribution(self, failed_nodes):
         """
