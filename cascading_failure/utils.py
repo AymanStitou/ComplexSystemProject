@@ -5,6 +5,7 @@ import random
 import pandas as pd
 from .CascadingFailure import CascadingFailureSimulation
 from mpl_toolkits.mplot3d import Axes3D
+from typing import Dict, List, Tuple, Optional
 
 def load_network(filepath: str) -> nx.Graph:
     """
@@ -269,15 +270,6 @@ def simulate_and_average_capacity(
         mean_results = {centrality: np.mean(results[centrality], axis=0) for centrality in centrality_types}
         return mean_results
 
-
-import networkx as nx
-import matplotlib.pyplot as plt
-import numpy as np
-import random
-import pandas as pd
-from mpl_toolkits.mplot3d import Axes3D
-from .CascadingFailure import CascadingFailureSimulation
-from typing import Dict, List, Tuple, Optional
 
 def load_network(filepath: str) -> nx.Graph:
     """
