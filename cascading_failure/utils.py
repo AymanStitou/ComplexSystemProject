@@ -404,11 +404,10 @@ def simulate_and_average_3D(
 
     # Iterate over the beta values
     for j, b in enumerate(beta_values):
-        print(f"Currently at {j+1}/{len(beta_values)} for beta value {b}")
         
+        print(f"Currently at {(j/len(beta_values)) * 100}%")
         # Iterate over the alpha values
         for i, a in enumerate(alpha_values):
-            print(f"Currently at {i+1}/{len(alpha_values)} for alpha value {a}")
             
             # Iterate over the centrality types
             for cent in centrality_types:
