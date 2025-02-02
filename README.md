@@ -43,7 +43,7 @@ To get started with the project:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/no-more-cascading.git
+   git clone https://github.com/AymanStitou/ComplexSystemProject.git
    ```
 2. Install the necessary dependencies (if applicable).
 3. Open `analysis.ipynb` and run the notebook to simulate cascading failures.
