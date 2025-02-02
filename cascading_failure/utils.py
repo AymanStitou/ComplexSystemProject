@@ -88,11 +88,11 @@ def run_target_attack_simulations(initial_failures, centrality_type, simulation,
 
     return I_list
 
-def run_simulation_single_pair(G, alpha, beta, initial_failures, centrality_type, simulation):
-    simulation.calculate_initial_load(centrality_type=centrality_type)
+def run_simulation_single_pair(G, alpha, beta, initial_failures, centrality_type, simulation, sum_centrality):
+    simulation.calculate_initial_load(centrality_type=centrality_type, sum_centrality=sum_centrality)
     simulation.calculate_capacity(alpha=alpha, beta=beta)
-    failed_nodes = simulation.simulate_cascading_failure(initial_failures)
-    return len(failed_nodes) / len(G) 
+    failed_nodes, _, _, _ = simulation.simulate_cascading_failure(initial_failures)
+    return len(failed_nodes) / len(G)
 
 
 def simulate_and_average_capacity(G, centrality_types, capacity_list, num_simulations=25, target_attack=False):
@@ -173,7 +173,7 @@ def simulate_and_average_3D(
     p_fail=0.01
 ):
     simulation = CascadingFailureSimulation(G)
-    simulation.calculate_centrality_measures()
+    sum_centrality = simulation.calculate_centrality_measures()  # Get sum of centralities
 
     results_3D = {
         cent: np.zeros((len(beta_values), len(alpha_values))) 
@@ -192,7 +192,7 @@ def simulate_and_average_3D(
                 frac_acc = 0.0
                 for _ in range(num_simulations):
                     initial_failures = random.sample(list(G.nodes()), n_failures)
-                    frac_acc += run_simulation_single_pair(G, a, b, initial_failures, cent, simulation)
+                    frac_acc += run_simulation_single_pair(G, a, b, initial_failures, cent, simulation, sum_centrality)
                 results_3D[cent][j, i] = frac_acc / num_simulations
     return results_3D
 
@@ -332,5 +332,3 @@ def save_results_3D_to_csv(results_3D, alpha_vals, beta_vals, filename):
     df = pd.DataFrame(rows)
     df.to_csv(filename, index=False)
     print(f"results saved to: {filename}")
-
-
