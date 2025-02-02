@@ -94,6 +94,22 @@ def run_simulation_single_pair(G, alpha, beta, initial_failures, centrality_type
     failed_nodes = simulation.simulate_cascading_failure(initial_failures)
     return len(failed_nodes) / len(G) 
 
+def run_simulation(G, alpha, initial_failures, centrality_type, simulation, beta=1):
+    """
+    Run the cascading failure simulation for a specific network and centrality measure.
+    It returns a list of the number of failed nodes for each alpha value.
+    """
+    n_failed_nodes = []
+    I_list = []
+
+    for a in alpha:
+        simulation.calculate_initial_load(centrality_type=centrality_type)
+        simulation.calculate_capacity(alpha=a, beta=beta)  # Fix beta to 1
+        failed_nodes = simulation.simulate_cascading_failure(initial_failures)
+        n_failed_nodes.append(len(failed_nodes))
+        I_list.append(len(failed_nodes)/len(G))
+
+    return I_list
 
 def simulate_and_average_capacity(G, centrality_types, capacity_list, num_simulations=25, target_attack=False):
     results = {centrality: [] for centrality in centrality_types}
@@ -121,57 +137,38 @@ def simulate_and_average_capacity(G, centrality_types, capacity_list, num_simula
         
         return mean_results
 
-def simulate_and_average(G, centrality_types, num_simulations=30, target_attack=False, alpha=0, beta=1, alpha_list=None, beta_list=None, use_prevention=False):
+def simulate_and_average(G, alpha, centrality_types, target_attack = False, num_simulations=30, beta = 1.2): # run each network for 25 times
     """
     Simulate the cascading failure multiple times and calculate the mean fraction of failed nodes for each centrality type.
     Return a dictionary with centrality measures as keys and mean I_list as values.
     """
     results = {centrality: [] for centrality in centrality_types}
     total_nodes = len(G.nodes)
-    num_failures = max(1, int(total_nodes * 0.01)) # 1% random failures
     simulation = CascadingFailureSimulation(G)
     simulation.calculate_centrality_measures()
-
+    num_failures = max(1, int(total_nodes * 0.01))
     if target_attack: 
         for centrality in centrality_types:
-            initial_failures = simulation.rank_centrality(centrality, num_failures)
-            if alpha_list is not None: 
-                I = run_target_attack_simulations(initial_failures, centrality, simulation, alpha_list=alpha_list, beta=beta, use_prevention=use_prevention)
-            elif beta_list is not None: 
-                I = run_target_attack_simulations(initial_failures, centrality, simulation, beta_list=beta_list, alpha=alpha, use_prevention=use_prevention)
-            else: 
-                raise ValueError("No input of varying variables (alpha/beta)")
-            results[centrality] = I
-            print(fr"Finish simulation of the centrality type: {centrality}")
-
-        return results
-    
-    else: 
-        for _ in range(num_simulations):
+            initial_failures = simulation.rank_centrality(centrality, num_failures) 
+            I = run_simulation(G, alpha, initial_failures, centrality, simulation, beta = beta)
+            results[centrality] = (I, np.zeros_like(I))
+            return results
+    else:
+        for i in range(num_simulations):
             initial_failures = random.sample(range(1,total_nodes-1), num_failures)
+            
             for centrality in centrality_types:
-                if alpha_list is not None: 
-                    I = run_target_attack_simulations(initial_failures, centrality, simulation, alpha_list=alpha_list, beta=beta, use_prevention=use_prevention)
-                elif beta_list is not None: 
-                    I = run_target_attack_simulations(initial_failures, centrality, simulation, beta_list=beta_list, alpha=alpha, use_prevention=use_prevention)
-                else: 
-                    raise ValueError("No input of varying variables (alpha/beta)")
+                I = run_simulation(G, alpha, initial_failures, centrality, simulation, beta = beta)
                 results[centrality].append(I)
-                print(fr"Finish simulation of the centrality type: {centrality}")
-
+    
         # Compute mean I_list for each centrality type across simulations
         mean_results = {centrality: np.mean(results[centrality], axis=0) for centrality in centrality_types}
-        
-        return mean_results
+        std_results = {centrality: np.std(results[centrality], axis=0, ddof=1) for centrality in centrality_types}
+        return {centrality: (mean_results[centrality], std_results[centrality]) for centrality in centrality_types}
 
-def simulate_and_average_3D(
-    G,
-    alpha_values,
-    beta_values,
-    centrality_types,
-    num_simulations=5,
-    p_fail=0.01
-):
+
+
+def simulate_and_average_3D(G, alpha_values, beta_values, centrality_types, num_simulations=5, p_fail=0.01):
     simulation = CascadingFailureSimulation(G)
     simulation.calculate_centrality_measures()
 
@@ -262,11 +259,11 @@ def plot_attack_graphs(results, alpha=0.2, beta=1, alpha_list=None, beta_list=No
 
     if file_name is not None: 
         if alpha_list is not None: 
-            plt.savefig(fr'target_attack/result_graph/{file_name}_beta_{beta}.png') 
+            plt.savefig(fr'results/plots/{file_name}_beta_{beta}.png') 
         elif beta_list is not None: 
-            plt.savefig(fr'target_attack/result_graph/{file_name}_alpha_{alpha}.png') 
+            plt.savefig(fr'results/plots/{file_name}_alpha_{alpha}.png') 
         elif capacity_list is not None:
-            plt.savefig(fr'target_attack/result_graph/{file_name}.png') 
+            plt.savefig(fr'results/plots/{file_name}.png') 
         else: 
             raise ValueError("No input of varying variables (alpha/beta)")
     else: 
