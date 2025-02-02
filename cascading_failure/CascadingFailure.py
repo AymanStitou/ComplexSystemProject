@@ -35,7 +35,7 @@ class CascadingFailureSimulation:
         for node in self.G.nodes:
             self.G.nodes[node]['degree_centrality'] = degree_centrality[node] * (self.N - 1)
             self.G.nodes[node]['betweenness_centrality'] = betweenness_centrality[node]
-            self.G.nodes[node]['closeness_centrality'] = closeness_centrality[node]
+            self.G.nodes[node]['closeness_centrality'] = (self.N - 1 /closeness_centrality[node])
             sum_degree_centrality += self.G.nodes[node]['degree_centrality']
             sum_betweenness_centrality += self.G.nodes[node]['betweenness_centrality']
             sum_closeness_centrality += self.G.nodes[node]['closeness_centrality']
